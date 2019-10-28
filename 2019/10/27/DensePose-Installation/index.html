@@ -79,12 +79,14 @@
 
 
 
+<meta name="description" content="DensePose是Facebook AI Reaserch 开源的人体实时姿势识别系统，通过建立从人体的2D图像到基于表面的3D表征的密集对应（dense correspondence）来实现，可以应用于人体的纹理转移等。其安装十分繁琐，且安装文档并不能解决很多问题，参考这篇安装教程成功安装。这里对安装的整个过程进行总结。 [TOC] 系统环境:这里是我自己已经配置成功的环境，仅做参考。  系统">
 <meta property="og:type" content="article">
 <meta property="og:title" content="DensePose Installation">
 <meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;10&#x2F;27&#x2F;DensePose-Installation&#x2F;index.html">
 <meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="DensePose是Facebook AI Reaserch 开源的人体实时姿势识别系统，通过建立从人体的2D图像到基于表面的3D表征的密集对应（dense correspondence）来实现，可以应用于人体的纹理转移等。其安装十分繁琐，且安装文档并不能解决很多问题，参考这篇安装教程成功安装。这里对安装的整个过程进行总结。 [TOC] 系统环境:这里是我自己已经配置成功的环境，仅做参考。  系统">
 <meta property="og:locale" content="en">
-<meta property="og:updated_time" content="2019-10-27T09:20:44.073Z">
+<meta property="og:updated_time" content="2019-10-28T07:46:32.430Z">
 <meta name="twitter:card" content="summary">
 
 
@@ -295,7 +297,223 @@
       
 
       
-        
+        <p>DensePose是Facebook AI Reaserch 开源的人体实时姿势识别系统，通过建立从人体的2D图像到基于表面的3D表征的密集对应（dense correspondence）来实现，可以应用于人体的纹理转移等。其安装十分繁琐，且安装文档并不能解决很多问题，参考这篇<a href="https://github.com/Johnqczhang/densepose_installation/blob/master/README.md" target="_blank" rel="noopener">安装教程</a>成功安装。这里对安装的整个过程进行总结。</p>
+<p>[TOC]</p>
+<h1 id="系统环境"><a href="#系统环境" class="headerlink" title="系统环境:"></a>系统环境:</h1><p>这里是我自己已经配置成功的环境，仅做参考。</p>
+<ul>
+<li>系统：Ubuntu16.04</li>
+<li>GPU： GeForce GTX 1080Ti</li>
+<li>CUDA： 9.0，cuDNN 7.4.2 </li>
+<li>Python：3.7，使用Anaconda3管理</li>
+</ul>
+<h1 id="安装依赖项"><a href="#安装依赖项" class="headerlink" title="安装依赖项"></a>安装依赖项</h1><h2 id="Python-通过conda安装"><a href="#Python-通过conda安装" class="headerlink" title="Python(通过conda安装)"></a>Python(通过conda安装)</h2><p>我们使用的是支持Python3的Detectron模块进行安装，因此创立Python3虚拟环境：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda create -y -n your_env_name python=x.x</span><br></pre></td></tr></table></figure>
+
+<p>可以选择设置以下环境变量来简化后面的安装：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export CONDA_ENV_PATH=/path/to/anaconda3/envs/your_env_name</span><br><span class="line">export CONDA_PKGS_PATH=/path/to/anaconda3/envs/your_env_name/lib/pythonx.x/site-packages</span><br></pre></td></tr></table></figure>
+
+<p>接着在已经创立的虚拟环境下（使用<code>conda activate your_env_name</code>激活），安装后续会用到的Python包：</p>
+<ul>
+<li><p>COCOAPI:  <code>conda install -y cython matplotlib</code></p>
+</li>
+<li><p>PyTorch:  <code>conda install -y numpy setuptools cffi typing pyyaml=3.13 mkl=2019.1 mkl-include=2019.1</code></p>
+<p>这里需要注意，conda默认安装的是版本最新的包，但是当pyyaml的版本为4.x时，尽管安装过程不会出错，但进行测试时会出现：<code>yaml.constructor.ConstructorError: while constructing a Python instance</code>报错，因此需要指定其版本（&gt;=3.12即可）。</p>
+</li>
+<li><p>Caffe2:   <code>conda install -y pydot future networkx</code></p>
+</li>
+<li><p>DensePose:   <code>conda install -y opencv mock scipy h5py</code></p>
+</li>
+<li><p>SMPL  model:   <code>pip install -y chumpy</code> </p>
+</li>
+</ul>
+<h2 id="COCO-API"><a href="#COCO-API" class="headerlink" title="COCO API"></a>COCO API</h2><p>按照以下指令进行安装即可</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git clone https://github.com/cocodataset/cocoapi.git $COCOAPI</span><br><span class="line">$ cd $COCOAPI/PythonAPI</span><br><span class="line">$ make install</span><br></pre></td></tr></table></figure>
+
+<h2 id="PyTorch-amp-Caffe2"><a href="#PyTorch-amp-Caffe2" class="headerlink" title="PyTorch &amp; Caffe2"></a>PyTorch &amp; Caffe2</h2><p>Caffe2目前已经被包含在PyTorch中，可以通过源码安装，或通过Conda进行安装。</p>
+<h3 id="通过源码"><a href="#通过源码" class="headerlink" title="通过源码"></a>通过源码</h3><p>参考<a href="https://github.com/pytorch/pytorch#from-source" target="_blank" rel="noopener">这里</a></p>
+<h3 id="通过Conda"><a href="#通过Conda" class="headerlink" title="通过Conda"></a>通过Conda</h3><p>访问PyTorch的<a href="https://pytorch.org/" target="_blank" rel="noopener">官方网站</a>，获取对应自己系统、CUDA版本、PyTorch版本的安装命令。PyTorch最新版本为1.3，若需要安装之前的版本则点击<code>Previous versions of PyTorch</code>即可。</p>
+<p>此处选择安装的为PyTorch1.1.0，且对应CUDA 版本为9.0，故命令如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit==9.0 -c pytorch</span><br></pre></td></tr></table></figure>
+
+<p>如果conda已经设置过使用国内镜像源进行下载安装，则使用：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit==9.0</span><br></pre></td></tr></table></figure>
+
+<p>安装结束后，通过以下命令可以检测Caffe2是否安装成功：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python -c &apos;from caffe2.python import core&apos; 2&gt;/dev/null &amp;&amp; echo &quot;Success&quot; || echo &quot;Failure&quot;</span><br></pre></td></tr></table></figure>
+
+<p>若返回为<code>Success</code>，进一步检查是否为GPU版本的Caffe2：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; import caffe2</span><br><span class="line">&gt;&gt;&gt; from caffe2.python import workspace</span><br><span class="line">&gt;&gt;&gt; print(workspace.NumCudaDevices())</span><br></pre></td></tr></table></figure>
+
+<p>成功打印出对应的GPU数目即可。</p>
+<p>安装结束后，对应的API包（<code>torch</code>和<code>caffe2</code>）被安装在<code>CONDA_PKGS_PATH</code>下，同样可以设置以下环境变量来方便后续的安装：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export $TORCH_PATH=$CONDA_PKGS_PATH/torch</span><br><span class="line">export $CAFFE2_INCLUDE_PATH=$TORCH_PATH/include/caffe2</span><br></pre></td></tr></table></figure>
+
+<h3 id="protobuf"><a href="#protobuf" class="headerlink" title="protobuf"></a>protobuf</h3><p>打开文件<code>CAFFE2_INCLUDE_PATH/proto/caffe2.pb.h</code>，可以查看当前Caffe2所需要的protobuf版本。该头文件内容大致如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">// Generated by the protocol buffer compiler.  DO NOT EDIT!</span><br><span class="line">// source: caffe2/proto/caffe2.proto</span><br><span class="line"></span><br><span class="line">#ifndef PROTOBUF_INCLUDED_caffe2_2fproto_2fcaffe2_2eproto</span><br><span class="line">#define PROTOBUF_INCLUDED_caffe2_2fproto_2fcaffe2_2eproto</span><br><span class="line"></span><br><span class="line">#include &lt;string&gt;</span><br><span class="line"></span><br><span class="line">#include &lt;google/protobuf/stubs/common.h&gt;</span><br><span class="line"></span><br><span class="line">#if GOOGLE_PROTOBUF_VERSION &lt; 3006001</span><br><span class="line">#error This file was generated by a newer version of protoc which is</span><br><span class="line">#error incompatible with your Protocol Buffer headers.  Please update</span><br><span class="line">#error your headers.</span><br><span class="line">#endif</span><br><span class="line">#if 3006001 &lt; GOOGLE_PROTOBUF_MIN_PROTOC_VERSION</span><br><span class="line">#error This file was generated by an older version of protoc which is</span><br><span class="line">#error incompatible with your Protocol Buffer headers.  Please</span><br><span class="line">#error regenerate this file with a newer version of protoc.</span><br><span class="line">#endif</span><br></pre></td></tr></table></figure>
+
+<p>因此通过<code>conda install protobuf=3.6.1</code>进行安装即可。</p>
+<h1 id="DensePose"><a href="#DensePose" class="headerlink" title="DensePose"></a>DensePose</h1><p>以下操作均在前面建立的虚拟环境下进行。<br>首先<code>git clone</code> DensePose仓库，我在此处使用的是 <a href="https://github.com/Johnqczhang" target="_blank" rel="noopener">@Johnqczhang</a> 将Detectron替代为支持<br>Python3的版本。<a href="https://github.com/facebookresearch/DensePose" target="_blank" rel="noopener">DensePose</a>官方尚未进行这一替换。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git clone https://github.com/Johnqczhang/DensePose $DENSEPOSE</span><br></pre></td></tr></table></figure>
+
+<p>接着进行set up ：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cd $DENSEPOSE</span><br><span class="line">$ python setup.py develop</span><br></pre></td></tr></table></figure>
+
+<p>测试Detectron：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ python $DENSEPOSE/detectron/tests/test_spatial_narrow_as_op.py</span><br></pre></td></tr></table></figure>
+
+<h3 id="DensePose安装"><a href="#DensePose安装" class="headerlink" title="DensePose安装"></a>DensePose安装</h3><p>这里需要进行修改的内容较多，需要特别注意。</p>
+<ol>
+<li><p>修改<code>$DENSEPOSE/CMakeList.txt</code>，将对应的路径更换为对应的路径即可。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)</span><br><span class="line"></span><br><span class="line">+# set caffe2 cmake path manually</span><br><span class="line">+set(Caffe2_DIR &quot;/path/to/anaconda3/envs/env_name/lib/pythonx.x/site-packages/torch/share/cmake/Caffe2&quot;)</span><br><span class="line">+# set cuDNN path</span><br><span class="line">+set(CUDNN_INCLUDE_DIR &quot;/path/to/your/cudnn/include&quot;)</span><br><span class="line">+set(CUDNN_LIBRARY &quot;/path/to/your/libcudnn/libcudnn.so&quot;)</span><br><span class="line">+include_directories(&quot;/path/to/anaconda3/envs/env_name/include&quot;)</span><br><span class="line">+# add static protobuf library</span><br><span class="line">+add_library(libprotobuf STATIC IMPORTED)</span><br><span class="line">+set(PROTOBUF_LIB &quot;/path/to/anaconda3/envs/env_name/lib/libprotobuf.a&quot;)</span><br><span class="line">+set_property(TARGET libprotobuf PROPERTY IMPORTED_LOCATION &quot;$&#123;PROTOBUF_LIB&#125;&quot;)</span><br><span class="line">+</span><br><span class="line"># Find the Caffe2 package.</span><br><span class="line"># Caffe2 exports the required targets, so find_package should work for</span><br><span class="line"># the standard Caffe2 installation. If you encounter problems with finding</span><br><span class="line"># the Caffe2 package, make sure you have run `make install` when installing</span><br><span class="line"># Caffe2 (`make install` populates your share/cmake/Caffe2).</span><br><span class="line">find_package(Caffe2 REQUIRED)</span><br><span class="line">+include_directories($&#123;CAFFE2_INCLUDE_DIRS&#125;)</span><br><span class="line"></span><br><span class="line">if ($&#123;CAFFE2_VERSION&#125; VERSION_LESS 0.8.2)</span><br><span class="line"># Pre-0.8.2 caffe2 does not have proper interface libraries set up, so we</span><br><span class="line">@@ -34,19 +47,19 @@ add_library(</span><br><span class="line">    caffe2_detectron_custom_ops SHARED</span><br><span class="line">    $&#123;CUSTOM_OPS_CPU_SRCS&#125;)</span><br><span class="line"></span><br><span class="line">-target_link_libraries(caffe2_detectron_custom_ops caffe2_library)</span><br><span class="line">+target_link_libraries(caffe2_detectron_custom_ops caffe2_library libprotobuf)</span><br><span class="line">install(TARGETS caffe2_detectron_custom_ops DESTINATION lib)</span><br><span class="line"></span><br><span class="line"># Install custom GPU ops lib, if gpu is present.</span><br><span class="line">if (CAFFE2_USE_CUDA OR CAFFE2_FOUND_CUDA)</span><br><span class="line"># Additional -I prefix is required for CMake versions before commit (&lt; 3.7):</span><br><span class="line"># https://github.com/Kitware/CMake/commit/7ded655f7ba82ea72a82d0555449f2df5ef38594</span><br><span class="line">-  list(APPEND CUDA_INCLUDE_DIRS -I$&#123;CAFFE2_INCLUDE_DIRS&#125;)</span><br><span class="line">+  # list(APPEND CUDA_INCLUDE_DIRS -I$&#123;CAFFE2_INCLUDE_DIRS&#125;)</span><br><span class="line">CUDA_ADD_LIBRARY(</span><br><span class="line">    caffe2_detectron_custom_ops_gpu SHARED</span><br><span class="line">    $&#123;CUSTOM_OPS_CPU_SRCS&#125;</span><br><span class="line">    $&#123;CUSTOM_OPS_GPU_SRCS&#125;)</span><br><span class="line"></span><br><span class="line">-  target_link_libraries(caffe2_detectron_custom_ops_gpu caffe2_gpu_library)</span><br><span class="line">+  target_link_libraries(caffe2_detectron_custom_ops_gpu caffe2_gpu_library libprotobuf)</span><br><span class="line">install(TARGETS caffe2_detectron_custom_ops_gpu DESTINATION lib)</span><br><span class="line">endif()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>下载<a href="https://github.com/pytorch/pytorch" target="_blank" rel="noopener">PyTorch</a>源码，并将<code>./caffe2/utils/</code> 下的<code>threadpool</code> 和<code>math</code> 文件夹复制到<br><code>$CAFFE2_INCLUDE_PATH/utils</code>下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cp -r $PYTORCH/caffe2/utils/threadpool $CAFFE2_INCLUDE_PATH/utils/</span><br><span class="line">$ cp -r $PYTORCH/caffe2/utils/math $CAFFE2_INCLUDE_PATH/utils/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>编译DensePose的自定义运算符：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ cd $DENSEPOSE</span><br><span class="line">$ make</span><br><span class="line">$ make ops</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>进行测试：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ python $DENSEPOSE/detectron/tests/test_zero_even_op.py</span><br></pre></td></tr></table></figure>
+
+<p>得到以下结果即安装正确</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[E init_intrinsics_check.cc:43] CPU feature avx is present on your machine, but the Caffe2 binary is not compiled with it. It means you may not get the full speed of your CPU.</span><br><span class="line">[E init_intrinsics_check.cc:43] CPU feature avx2 is present on your machine, but the Caffe2 binary is not compiled with it. It means you may not get the full speed of your CPU.</span><br><span class="line">[E init_intrinsics_check.cc:43] CPU feature fma is present on your machine, but the Caffe2 binary is not compiled with it. It means you may not get the full speed of your CPU.</span><br><span class="line">............</span><br><span class="line">----------------------------------------------------------------------</span><br><span class="line">Ran 12 tests in 7.206s</span><br><span class="line"></span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h3 id="获取DensePose相关数据"><a href="#获取DensePose相关数据" class="headerlink" title="获取DensePose相关数据"></a>获取DensePose相关数据</h3><p>参考<a href="https://github.com/facebookresearch/DensePose/blob/master/INSTALL.md#fetch-densepose-data" target="_blank" rel="noopener">官方文档</a></p>
+<h2 id="设置COCO数据集"><a href="#设置COCO数据集" class="headerlink" title="设置COCO数据集"></a>设置COCO数据集</h2><p>参考<a href="https://github.com/facebookresearch/DensePose/blob/master/INSTALL.md#setting-up-the-coco-dataset" target="_blank" rel="noopener">官方文档</a></p>
+<h1 id="BUG汇总"><a href="#BUG汇总" class="headerlink" title="BUG汇总"></a>BUG汇总</h1><p>在安装过程中会遇到各式各样的问题，并且每次安装可能还会遇到新的问题；这里对我遇到的错误进行汇总。若严格按照上述安装过程进行，可以避免其中大部分错误，因此下述部分也可以当作是对上面安装过程中改动部分的解释。错误解决方法大多参考自<a href="https://github.com/facebookresearch/DensePose/issues" target="_blank" rel="noopener">DensePose Issues</a>。</p>
+<h2 id="make"><a href="#make" class="headerlink" title="make"></a>make</h2><p>对make过程中遇到的错误进行汇总</p>
+<h3 id="Caffe2-module-not-found"><a href="#Caffe2-module-not-found" class="headerlink" title="Caffe2 module not found"></a>Caffe2 module not found</h3><ul>
+<li><p>错误信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Could not find a package configuration file provided by &quot;Caffe2&quot; with any of the following names: </span><br><span class="line">    Caffe2Config.cmake </span><br><span class="line">    caffe2-config.cmake</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>产生原因</p>
+<p>Caffe2安装路径未告知CMake。</p>
+</li>
+<li><p>解决方法</p>
+<p>在<code>CMakeLists.txt</code>中添加对Caffe2路径的设置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set(Caffe2_DIR &quot;/path/to/anaconda3/envs/env_name/lib/pythonx.x/site-packages/torch/share/cmake/Caffe2&quot;)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="Detectron-ops-lib-not-found"><a href="#Detectron-ops-lib-not-found" class="headerlink" title="Detectron ops lib not found"></a>Detectron ops lib not found</h3><ul>
+<li><p>错误信息</p>
+<p>在make结束后进行测试（<code>python $DENSEPOSE/detectron/tests/test_spatial_narrow_as_op.py</code>）时，遇到以下错误信息:    </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AssertionError: Detectron ops lib not found; make sure that your Caffe2 version includes Detectron module</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>产生原因</p>
+<p>DensePose中的Python模块不能识别出Caffe2。</p>
+</li>
+<li><p>解决方法</p>
+<p>找到<code>libcaffe2_detectron_ops_gpu.so</code>，并将其复制到<code>/usr/lib</code>（未使用conda虚拟环境）或<code>/path/to/conda/env/lib</code>（使用conda虚拟环境）。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo find / -name libcaffe2_detectron_ops_gpu.so</span><br><span class="line">$ cp path/to/libcaffe2_detectron_ops_gpu.so /path/to/conda/env/lib</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h2 id="make-ops"><a href="#make-ops" class="headerlink" title="make ops"></a>make ops</h2><p>对make ops过程中遇到的错误进行汇总</p>
+<h3 id="“context-gpu-h”-not-found"><a href="#“context-gpu-h”-not-found" class="headerlink" title="“context_gpu.h” not found."></a>“context_gpu.h” not found.</h3><ul>
+<li><p>错误信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fatal error: caffe2/core/context.h: No such file or directory</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>产生原因</p>
+<p>未声明库文件路径。</p>
+</li>
+<li><p>解决方法</p>
+<p>在<code>CMakeLists.txt</code>中添加：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">include_directories(&quot;/path/to/pytorch/torch/lib/include&quot;)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="“mkl-cblas-h”-not-found"><a href="#“mkl-cblas-h”-not-found" class="headerlink" title="“mkl_cblas.h” not found."></a>“mkl_cblas.h” not found.</h3><ul>
+<li><p>错误信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fatal error: mkl_cblas.h: No such file or directory</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>产生原因</p>
+<p>找不到对应的Intel MKL库。</p>
+</li>
+<li><p>解决方法</p>
+<p>首先安装<a href="https://software.intel.com/en-us/mkl/choose-download/linux" target="_blank" rel="noopener">Intel MKL</a>库，然后将其路径加入到CPATH中去：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo find / -name mkl_cblas.h</span><br><span class="line">$ export CPATH=$CPATH:/path/to/your/mkl_cblas.h</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="“ThreadPool-h”-not-found"><a href="#“ThreadPool-h”-not-found" class="headerlink" title="“ThreadPool.h” not found"></a>“ThreadPool.h” not found</h3><ul>
+<li><p>错误信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fatal error: caffe2/utils/threadpool/ThreadPool.h: No such file or directory</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>产生原因</p>
+<p>这里由于Caffe2是通过Anaconda安装的，因此与源码相比，会缺少一些文件</p>
+</li>
+<li><p>解决方法</p>
+<p>下载PyTorch源码，并将并将<code>./caffe2/utils/</code> 下的<code>threadpool</code> 和<code>math</code> 文件夹复制到<br><code>$CAFFE2_INCLUDE_PATH/utils</code>下。（如上文述）</p>
+</li>
+</ul>
+<h2 id="测试错误"><a href="#测试错误" class="headerlink" title="测试错误"></a>测试错误</h2><p>在安装完成后使用时会出现的一些奇奇怪怪的错误：）</p>
+<h3 id="Undefined-symbol-ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE"><a href="#Undefined-symbol-ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE" class="headerlink" title="Undefined symbol: _ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE"></a>Undefined symbol: _ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE</h3><ul>
+<li><p>错误信息</p>
+<p>在测试（<code>python detectron/tests/test_zero_even_op.py</code>）时出错：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OSError: /path/to/densepose/build/libcaffe2_detectron_custom_ops_gpu.so: undefined symbol: _ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>错误原因</p>
+<p>可以看到是protobuf的错误，推测是由于版本不符导致。这里就是上面提到的需要从Caffe2中获取合适的protobuf版本进行安装。</p>
+</li>
+<li><p>解决方法</p>
+<p>首先查看<code>CAFFE2_INCLUDE_PATH/proto/caffe2.pb.h</code>中要求的protobuf版本，并进行安装；</p>
+<p>接着在<code>CMakeList.txt</code>中添加以下几行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">add_library(libprotobuf STATIC IMPORTED) </span><br><span class="line">set(PROTOBUF_LIB &quot;/path/to/pytorch/torch/lib/libprotobuf.a&quot;) </span><br><span class="line">set_property(TARGET libprotobuf PROPERTY IMPORTED_LOCATION &quot;$&#123;PROTOBUF_LIB&#125;&quot;)</span><br></pre></td></tr></table></figure>
+
+<p>并对以下两行进行修改：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">target_link_libraries(caffe2_detectron_custom_ops caffe2_library)</span><br><span class="line">target_link_libraries(caffe2_detectron_custom_ops_gpu caffe2_gpu_library)</span><br></pre></td></tr></table></figure>
+
+<p>替换为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">target_link_libraries(caffe2_detectron_custom_ops caffe2_library libprotobuf) </span><br><span class="line">target_link_libraries(caffe2_detectron_custom_ops_gpu caffe2_gpu_library libprotobuf)</span><br></pre></td></tr></table></figure>
+
+<p>接着需要重新运行<code>make ops</code>，然后再进行测试。</p>
+</li>
+</ul>
+<h3 id="Undefined-symbol-ZN6caffe219CPUOperatorRegistryB5cxx11Ev"><a href="#Undefined-symbol-ZN6caffe219CPUOperatorRegistryB5cxx11Ev" class="headerlink" title="Undefined symbol: _ZN6caffe219CPUOperatorRegistryB5cxx11Ev"></a>Undefined symbol: _ZN6caffe219CPUOperatorRegistryB5cxx11Ev</h3><ul>
+<li><p>错误信息</p>
+<p>在测试（<code>python detectron/tests/test_zero_even_op.py</code>）时出错：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OSError: /path/to/densepose/build/libcaffe2_detectron_custom_ops_gpu.so: undefined symbol: _ZN6caffe219CPUOperatorRegistryB5cxx11Ev</span><br></pre></td></tr></table></figure>
+
+<p>最后一个！但也是纠错时间最久的一个错误。。。</p>
+</li>
+<li><p>产生原因</p>
+<p>GCC版本不符合。一般<code>apt-get</code>方法安装的均为最新版本，但是这里需要安装指定版本的GCC。</p>
+<p>参考<a href="https://github.com/linkinpark213/linkinpark213.github.io/issues/12#issuecomment-456251560" target="_blank" rel="noopener">@Johnqczhang</a>一步一步查找错误：</p>
+<ol>
+<li><p>首先根据错误信息可以判断，该错误是由于依赖库链接问题产生的；</p>
+</li>
+<li><p>接着通过在<code>libcaffe2_detectron_custom_ops.so</code>所在文件夹下执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ldd -r libcaffe2_detectron_custom_ops.so</span><br></pre></td></tr></table></figure>
+
+<p>查看程序依赖库库，可以看到多个未定义的变量，且名字中均带有<code>caffe2</code>、<code>c10</code>等模块名称，因此推测是<code>libcaffe2.so</code>出问题。</p>
+</li>
+<li><p>然后在<code>libcaffe2.so</code>所在文件夹下执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ strings -a libcaffe2.so | grep _ZN6caffe219CPUOperator</span><br></pre></td></tr></table></figure>
+
+<p>同样可以看到多个对应的symbol，但是没有<code>B5cxx11Ev</code>后缀</p>
+</li>
+<li><p>分析<code>B5cxx11Ev</code>产生的原因，是由于在<code>CMakeList.txt</code>中有：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set(CMAKE_CXX_FLAGS &quot;$&#123;CMAKE_CXX_FLAGS&#125; -std=c++11 -O2 -fPIC -Wno-narrowing&quot;)</span><br></pre></td></tr></table></figure>
+
+<p>（其具体含义可以参考<a href="https://stackoverflow.com/questions/5311515/gcc-fpic-option" target="_blank" rel="noopener">GCC -fPIC option</a>）</p>
+<p>总之是GCC编译过程中出了岔子。</p>
+</li>
+<li><p>查看自己当前的GCC版本；并通过在<code>libcaffe2.so</code>所在文件夹下执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ strings -a $TORCH_PATH/lib/libcaffe2.so | grep &quot;GCC: (&quot;</span><br></pre></td></tr></table></figure>
+
+<p>可以得到caffe2预编译所使用的是GCC4.9.2，与本机已装GCC版本不符，因此需要安装GCC4.9.2。</p>
+</li>
+</ol>
+</li>
+<li><p>解决方法</p>
+<p>安装GCC4.9.2，并重新在该环境下安装DensePose。</p>
+</li>
+</ul>
+<p>至此安装结束。：）</p>
+
       
     </div>
     
@@ -379,8 +597,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -422,6 +649,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#系统环境"><span class="nav-number">1.</span> <span class="nav-text">系统环境:</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#安装依赖项"><span class="nav-number">2.</span> <span class="nav-text">安装依赖项</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Python-通过conda安装"><span class="nav-number">2.1.</span> <span class="nav-text">Python(通过conda安装)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#COCO-API"><span class="nav-number">2.2.</span> <span class="nav-text">COCO API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PyTorch-amp-Caffe2"><span class="nav-number">2.3.</span> <span class="nav-text">PyTorch &amp; Caffe2</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#通过源码"><span class="nav-number">2.3.1.</span> <span class="nav-text">通过源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#通过Conda"><span class="nav-number">2.3.2.</span> <span class="nav-text">通过Conda</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#protobuf"><span class="nav-number">2.3.3.</span> <span class="nav-text">protobuf</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DensePose"><span class="nav-number">3.</span> <span class="nav-text">DensePose</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DensePose安装"><span class="nav-number">3.0.1.</span> <span class="nav-text">DensePose安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取DensePose相关数据"><span class="nav-number">3.0.2.</span> <span class="nav-text">获取DensePose相关数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置COCO数据集"><span class="nav-number">3.1.</span> <span class="nav-text">设置COCO数据集</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#BUG汇总"><span class="nav-number">4.</span> <span class="nav-text">BUG汇总</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#make"><span class="nav-number">4.1.</span> <span class="nav-text">make</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Caffe2-module-not-found"><span class="nav-number">4.1.1.</span> <span class="nav-text">Caffe2 module not found</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Detectron-ops-lib-not-found"><span class="nav-number">4.1.2.</span> <span class="nav-text">Detectron ops lib not found</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#make-ops"><span class="nav-number">4.2.</span> <span class="nav-text">make ops</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#“context-gpu-h”-not-found"><span class="nav-number">4.2.1.</span> <span class="nav-text">“context_gpu.h” not found.</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#“mkl-cblas-h”-not-found"><span class="nav-number">4.2.2.</span> <span class="nav-text">“mkl_cblas.h” not found.</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#“ThreadPool-h”-not-found"><span class="nav-number">4.2.3.</span> <span class="nav-text">“ThreadPool.h” not found</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试错误"><span class="nav-number">4.3.</span> <span class="nav-text">测试错误</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Undefined-symbol-ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE"><span class="nav-number">4.3.1.</span> <span class="nav-text">Undefined symbol: _ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Undefined-symbol-ZN6caffe219CPUOperatorRegistryB5cxx11Ev"><span class="nav-number">4.3.2.</span> <span class="nav-text">Undefined symbol: _ZN6caffe219CPUOperatorRegistryB5cxx11Ev</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
